@@ -29,8 +29,14 @@ def pytest_addoption(parser):
 # Fixtures
 @pytest.fixture(scope="module")
 def napalm_connect(request):
+    def napalm_close():
+        """Finalizer that will automatically close napalm conn when tests are done."""
+        connection.close()
     device_under_test = request.config.getoption('test_device')
     test_devices = parse_yaml(PWD + "/test_devices.yml")
     device_def = test_devices[device_under_test]
     driver = get_network_driver(device_def.pop('device_type'))
-    return driver(**device_def)
+    connection = driver(**device_def)
+
+    request.addfinalizer(napalm_close)
+    return connection

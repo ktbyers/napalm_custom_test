@@ -10,7 +10,8 @@ def test_facts(napalm_connect):
     assert napalm_facts['vendor'].lower() == 'cisco'
     assert '7.3(1)D1(1)' in napalm_facts['os_version']
     assert isinstance(napalm_facts['serial_number'], type('')) and napalm_facts['serial_number']
-    assert napalm_facts['hostname'] == 'nxos1'
+    assert 'nxos1' in napalm_facts['hostname']
     assert napalm_facts['fqdn'] == 'nxos1.twb-tech.com'
-    assert napalm_facts["model"] == "NX-OSv Chassis"
-    assert 'Ethernet2/1' in napalm_facts["interface_list"]
+    assert 'NX-OSv' in napalm_facts["model"]
+    assert 'Ethernet2/1' in napalm_facts["interface_list"] or \
+           'Eth2/1' in napalm_facts["interface_list"]
