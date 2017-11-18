@@ -38,7 +38,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    packages=['napalm_custom_test',]
+    packages=['napalm_custom_test',],
     install_requires=[
             'napalm>=2.0.0',
             'pytest',
