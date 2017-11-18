@@ -1,5 +1,4 @@
 def test_facts(napalm_connect):
-    napalm_connect.open()
     napalm_facts = napalm_connect.get_facts()
     assert isinstance(napalm_facts, type({}))
     assert napalm_facts['uptime'] > 0

@@ -37,6 +37,28 @@ def napalm_connect(request):
     device_def = test_devices[device_under_test]
     driver = get_network_driver(device_def.pop('device_type'))
     connection = driver(**device_def)
+    connection.open()
 
     request.addfinalizer(napalm_close)
+    return connection
+
+@pytest.fixture(scope="module")
+def napalm_config(request):
+    def napalm_close():
+        """Finalizer that will automatically close napalm conn when tests are done."""
+        connection.close()
+    device_under_test = request.config.getoption('test_device')
+    test_devices = parse_yaml(PWD + "/test_devices.yml")
+    device_def = test_devices[device_under_test]
+    platform = device_def.pop('device_type')
+    driver = get_network_driver(platform)
+    connection = driver(**device_def)
+    connection.open()
+    connection._platform = platform
+
+    # Stage a known initial configuration
+    filename = 'CFGS/{}/initial_config.txt'.format(platform)
+    print("Loading initial configuration.")
+    connection.load_replace_candidate(filename=filename)
+    connection.commit_config()
     return connection
