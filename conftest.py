@@ -60,5 +60,6 @@ def napalm_config(request):
     filename = 'CFGS/{}/initial_config.txt'.format(platform)
     print("Loading initial configuration.")
     connection.load_replace_candidate(filename=filename)
+    #print(connection.compare_config())
     connection.commit_config()
     return connection

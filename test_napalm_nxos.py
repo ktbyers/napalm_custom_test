@@ -1,3 +1,4 @@
+import six
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -8,7 +9,7 @@ def test_facts(napalm_connect):
     assert napalm_facts['uptime'] > 0
     assert napalm_facts['vendor'].lower() == 'cisco'
     assert '7.3(1)D1(1)' in napalm_facts['os_version']
-    assert isinstance(napalm_facts['serial_number'], type('')) and napalm_facts['serial_number']
+    assert isinstance(napalm_facts['serial_number'], six.string_types) and napalm_facts['serial_number']
     assert 'nxos1' in napalm_facts['hostname']
     assert napalm_facts['fqdn'] == 'nxos1.twb-tech.com'
     assert 'NX-OSv' in napalm_facts["model"]
