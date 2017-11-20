@@ -29,6 +29,7 @@ setup(
     author='Kirk Byers',
     author_email='ktbyers@twb-tech.com',
     license='Apache2',
+    package_data={'napalm_custom_test': ['LICENSE', '*.sh']},
     classifiers=[
         'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 2',

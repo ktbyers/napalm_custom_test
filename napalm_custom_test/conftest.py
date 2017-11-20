@@ -42,7 +42,8 @@ def napalm_connect(request):
     request.addfinalizer(napalm_close)
     return connection
 
-@pytest.fixture(scope="module")
+#@pytest.fixture(scope="module")
+@pytest.fixture
 def napalm_config(request):
     def napalm_close():
         """Finalizer that will automatically close napalm conn when tests are done."""
