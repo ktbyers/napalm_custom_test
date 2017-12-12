@@ -42,7 +42,7 @@ def napalm_connect(request):
     request.addfinalizer(napalm_close)
     return connection
 
-#@pytest.fixture(scope="module")
+# Resets initial state on every test
 @pytest.fixture
 def napalm_config(request):
     def napalm_close():

@@ -23,6 +23,29 @@ def test_compare_config(napalm_config):
     else:
         assert False
 
+def test_commit_config(napalm_config):
+    filename = 'CFGS/{}/hostname_change.txt'.format(napalm_config._platform)
+    if napalm_config._platform == 'ios':
+        napalm_config.load_replace_candidate(filename=filename)
+        napalm_config.commit_config()
+        running_config = napalm_config.get_config()['running']
+        for line in running_config.splitlines():
+            if 'hostname test-rtr1' in line:
+                status = True
+                break
+        else:
+            status = False
+        assert status
+    # Need to test hostname change for IOS also
+
+def test_discard_config(napalm_config):
+    filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
+    if napalm_config._platform == 'ios':
+        napalm_config.load_replace_candidate(filename=filename)
+        napalm_config.discard_config()
+        output = napalm_config.compare_config()
+        assert output == ''
+
 def test_commit_confirm(napalm_config):
     """Commit confirm and confirm the change (replace)."""
     filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
