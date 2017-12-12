@@ -2,6 +2,17 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import time
 
+# Relevant methods
+# load_merge_candidate()
+# load_replace_candidate()
+# compare_config()
+# discard_config()
+# commit_config()
+# rollback()
+
+# commit confirmed mechanism
+# IOS needs inline and SCP mechanism tested
+
 def test_compare_config(napalm_config):
     filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
     print(filename)
@@ -36,7 +47,6 @@ def test_commit_config(napalm_config):
         else:
             status = False
         assert status
-    # Need to test hostname change for IOS also
 
 def test_discard_config(napalm_config):
     filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
