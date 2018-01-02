@@ -14,6 +14,8 @@ echo "Starting tests...good luck:" \
 && py.test -v test_napalm_eos.py --test_device eos \
 && echo "Juniper" \
 && py.test -v test_napalm_junos.py --test_device junos \
+&& echo "Cisco IOS-XR" \
+&& py.test -s -v test_napalm_iosxr.py --test_device iosxr \
 \
 || RETURN_CODE=1
 
