@@ -1,6 +1,7 @@
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import time
+import re
 
 # Relevant methods
 # load_merge_candidate()
@@ -34,7 +35,36 @@ def test_compare_config(napalm_config):
     else:
         assert False
 
-def test_commit_config(napalm_config):
+def test_merge_commit_config(napalm_config):
+    if napalm_config._platform == 'nxos_ssh':
+        napalm_config.load_merge_candidate(config='logging history size 100')
+        output = napalm_config.compare_config()
+        napalm_config.commit_config()
+        config = napalm_config.get_config()
+        running_config = config['running']
+        startup_config = config['startup']
+        running = True if re.search(r"logging history size 100", running_config) else False
+        startup = True if re.search(r"logging history size 100", startup_config) else False
+        print(running)
+        print(startup)
+        assert running and startup
+
+def test_replace_commit_config(napalm_config):
+    filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
+    napalm_config.load_replace_candidate(filename=filename)
+    output = napalm_config.compare_config()
+    if napalm_config._platform == 'nxos_ssh':
+        napalm_config.commit_config()
+        config = napalm_config.get_config()
+        running_config = config['running']
+        startup_config = config['startup']
+        running = True if re.search(r"logging history size 200", running_config) else False
+        startup = True if re.search(r"logging history size 200", startup_config) else False
+        print(running)
+        print(startup)
+        assert (running and startup)
+
+def test_commit_config_hostname(napalm_config):
     filename = 'CFGS/{}/hostname_change.txt'.format(napalm_config._platform)
     if napalm_config._platform == 'ios':
         napalm_config.load_replace_candidate(filename=filename)
