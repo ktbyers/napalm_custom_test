@@ -53,7 +53,7 @@ def test_replace_commit_config(napalm_config):
     filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
     napalm_config.load_replace_candidate(filename=filename)
     output = napalm_config.compare_config()
-    if napalm_config._platform == 'nxos_ssh':
+    if napalm_config._platform in ['nxos', 'nxos_ssh']:
         napalm_config.commit_config()
         config = napalm_config.get_config()
         running_config = config['running']
