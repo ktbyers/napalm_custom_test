@@ -5,6 +5,8 @@ import re
 
 # Relevant methods
 # load_merge_candidate()
+#    Merge done
+#    Still need to merge from file
 # load_replace_candidate()
 # compare_config()
 # discard_config()
@@ -13,6 +15,16 @@ import re
 
 # commit confirmed mechanism
 # IOS needs inline and SCP mechanism tested
+
+def retrieve_config(napalm_config):
+    """Retrieve the running and startup-config from remote device."""
+    config = napalm_config.get_config()
+    running_config = config['running']
+    startup_config = config['startup']
+    if napalm_config._platform == 'junos':
+        startup_config = running_config
+    return (running_config, startup_config)
+
 
 def test_compare_config(napalm_config):
     filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
@@ -35,34 +47,74 @@ def test_compare_config(napalm_config):
     else:
         assert False
 
-def test_merge_commit_config(napalm_config):
-    if napalm_config._platform == 'nxos_ssh':
-        napalm_config.load_merge_candidate(config='logging history size 100')
-        output = napalm_config.compare_config()
+def test_merge_inline_commit_config(napalm_config):
+    """Tests NAPALM merge operation incluging commit.
+
+    Merge load comes from inline 'config'
+
+    Verify that change is included in running-config and startup-config
+    """
+    # Actual change that is made on device
+    merge_change = {
+        'eos': 'logging buffered 7000',
+        'ios': 'logging buffered 7000',
+        'junos': 'set system syslog archive size 200k files 3',
+        'nxos': 'logging history size 100',
+        'nxos_ssh': 'logging history size 100',
+    }
+
+    # Pattern that we search for in the end-config
+    merge_search = {}
+    merge_search.update(merge_change)
+    merge_search.update({'junos': 'archive size 200k files 3'})
+    platform = napalm_config._platform
+    
+    if platform in list(merge_change.keys()):
+        config_pattern = merge_search[platform]
+
+        # Stage the merge change
+        config_chg = merge_change[platform]
+        napalm_config.load_merge_candidate(config=config_chg)
+
         napalm_config.commit_config()
-        config = napalm_config.get_config()
-        running_config = config['running']
-        startup_config = config['startup']
-        running = True if re.search(r"logging history size 100", running_config) else False
-        startup = True if re.search(r"logging history size 100", startup_config) else False
-        print(running)
-        print(startup)
+
+        running_config, startup_config = retrieve_config(napalm_config)
+        running = True if re.search(config_pattern, running_config) else False
+        startup = True if re.search(config_pattern, startup_config) else False
         assert running and startup
+    else:
+        assert False
+
 
 def test_replace_commit_config(napalm_config):
-    filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
-    napalm_config.load_replace_candidate(filename=filename)
-    output = napalm_config.compare_config()
-    if napalm_config._platform in ['nxos', 'nxos_ssh']:
+
+    # Configuration element that is being changed (used in search in end-config)
+    replace_change = {
+#        'eos': 'logging buffered 7000',
+#        'ios': 'logging buffered 7000',
+#        'junos': 'set system syslog archive size 200k files 3',
+        'nxos': 'logging history size 200',
+        'nxos_ssh': 'logging history size 200',
+    }
+
+    platform = napalm_config._platform
+
+    if platform in list(replace_change.keys()):
+        
+        config_pattern = replace_change[platform]
+
+        # Stage new config for configuration replacement
+        filename = 'CFGS/{}/compare_1.txt'.format(platform)
+        napalm_config.load_replace_candidate(filename=filename)
+
         napalm_config.commit_config()
-        config = napalm_config.get_config()
-        running_config = config['running']
-        startup_config = config['startup']
-        running = True if re.search(r"logging history size 200", running_config) else False
-        startup = True if re.search(r"logging history size 200", startup_config) else False
-        print(running)
-        print(startup)
-        assert (running and startup)
+
+        running_config, startup_config = retrieve_config(napalm_config)
+        running = True if re.search(config_pattern, running_config) else False
+        startup = True if re.search(config_pattern, startup_config) else False
+        assert running and startup
+    else:
+        assert False
 
 def test_commit_config_hostname(napalm_config):
     filename = 'CFGS/{}/hostname_change.txt'.format(napalm_config._platform)
