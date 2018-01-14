@@ -88,20 +88,20 @@ def test_merge_inline_commit_config(napalm_config):
 
 def test_replace_commit_config(napalm_config):
 
-    # Configuration element that is being changed (used in search in end-config)
-    replace_change = {
-#        'eos': 'logging buffered 7000',
-#        'ios': 'logging buffered 7000',
-#        'junos': 'set system syslog archive size 200k files 3',
+    # Configuration element that is being changed to search for in end-config
+    replace_pattern = {
+        'eos': 'ntp server 130.126.24.24',
+        'ios': 'logging buffered 5000',
+        'junos': 'archive size 240k files 3',
         'nxos': 'logging history size 200',
         'nxos_ssh': 'logging history size 200',
     }
 
     platform = napalm_config._platform
 
-    if platform in list(replace_change.keys()):
+    if platform in list(replace_pattern.keys()):
         
-        config_pattern = replace_change[platform]
+        config_pattern = replace_pattern[platform]
 
         # Stage new config for configuration replacement
         filename = 'CFGS/{}/compare_1.txt'.format(platform)

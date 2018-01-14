@@ -28,6 +28,18 @@ echo "Starting tests...good luck:" \
 && echo "Juniper" \
 && py.test -s -v test_napalm_cfg.py::test_merge_inline_commit_config --test_device junos \
 && echo \
+&& echo "---- replace_commit_config ----" \
+&& echo "Cisco IOS" \
+&& py.test -s -v test_napalm_cfg.py::test_replace_commit_config --test_device ios \
+&& echo "Cisco NX-OS (API)" \
+&& py.test -s -v test_napalm_cfg.py::test_replace_commit_config --test_device nxos \
+&& echo "Cisco NX-OS (SSH)" \
+&& py.test -s -v test_napalm_cfg.py::test_replace_commit_config --test_device nxos_ssh \
+&& echo "Arista" \
+&& py.test -s -v test_napalm_cfg.py::test_replace_commit_config --test_device eos \
+&& echo "Juniper" \
+&& py.test -s -v test_napalm_cfg.py::test_replace_commit_config --test_device junos \
+&& echo \
 \
 || RETURN_CODE=1
 
