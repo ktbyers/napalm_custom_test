@@ -47,6 +47,7 @@ def test_compare_config(napalm_config):
     else:
         assert False
 
+
 def test_merge_inline_commit_config(napalm_config):
     """Tests NAPALM merge operation incluging commit.
 
@@ -116,6 +117,50 @@ def test_replace_commit_config(napalm_config):
     else:
         assert False
 
+
+def test_discard_config(napalm_config):
+
+    platform = napalm_config._platform
+
+    # Discard on a replace operation
+    filename = 'CFGS/{}/compare_1.txt'.format(platform)
+    napalm_config.load_replace_candidate(filename=filename)
+    napalm_config.discard_config()
+    output_replace = napalm_config.compare_config()
+    assert output_replace == ''
+
+    # Discard on a merge operation
+    merge_change = {
+        'eos': 'logging buffered 7000',
+        'ios': 'logging buffered 7000',
+        'junos': 'set system syslog archive size 200k files 3',
+        'nxos': 'logging history size 100',
+        'nxos_ssh': 'logging history size 100',
+    }
+
+    # Stage the merge change
+    config_chg = merge_change[platform]
+    napalm_config.load_merge_candidate(config=config_chg)
+
+    napalm_config.discard_config()
+    output_merge = napalm_config.compare_config()
+    assert output_merge == ''
+
+
+def test_rollback(napalm_config):
+    filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
+    if napalm_config._platform == 'ios':
+        napalm_config.load_replace_candidate(filename=filename)
+        output = napalm_config.compare_config()
+        napalm_config.commit_config()
+        output = napalm_config.device.send_command('show run | inc logging buffer')
+        assert 'logging buffered 5000' in output
+        # Now rollback to original state
+        napalm_config.rollback()
+        output = napalm_config.device.send_command('show run | inc logging buffer')
+        assert 'logging buffered 10000' in output
+
+
 def test_commit_config_hostname(napalm_config):
     filename = 'CFGS/{}/hostname_change.txt'.format(napalm_config._platform)
     if napalm_config._platform == 'ios':
@@ -130,26 +175,6 @@ def test_commit_config_hostname(napalm_config):
             status = False
         assert status
 
-def test_discard_config(napalm_config):
-    filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
-    if napalm_config._platform == 'ios':
-        napalm_config.load_replace_candidate(filename=filename)
-        napalm_config.discard_config()
-        output = napalm_config.compare_config()
-        assert output == ''
-
-def test_rollback(napalm_config):
-    filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
-    if napalm_config._platform == 'ios':
-        napalm_config.load_replace_candidate(filename=filename)
-        output = napalm_config.compare_config()
-        napalm_config.commit_config()
-        output = napalm_config.device.send_command('show run | inc logging buffer')
-        assert 'logging buffered 5000' in output
-        # Now rollback to original state
-        napalm_config.rollback()
-        output = napalm_config.device.send_command('show run | inc logging buffer')
-        assert 'logging buffered 10000' in output
 
 def test_commit_confirm(napalm_config):
     """Commit confirm and confirm the change (replace)."""
