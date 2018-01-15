@@ -148,17 +148,33 @@ def test_discard_config(napalm_config):
 
 
 def test_rollback(napalm_config):
+    config_change = {
+        'ios': 'logging buffered 5000',
+    }
+
+    original_cfg = {
+        'ios': 'logging buffered 10000',
+    }
+
     filename = 'CFGS/{}/compare_1.txt'.format(napalm_config._platform)
-    if napalm_config._platform == 'ios':
+    if napalm_config._platform in config_change.keys():
+
+        config_pattern = config_change['platform']
+
         napalm_config.load_replace_candidate(filename=filename)
-        output = napalm_config.compare_config()
         napalm_config.commit_config()
-        output = napalm_config.device.send_command('show run | inc logging buffer')
-        assert 'logging buffered 5000' in output
+
+        running_config, startup_config = retrieve_config(napalm_config)
+        running = True if re.search(config_pattern, running_config) else False
+        assert running
+
         # Now rollback to original state
         napalm_config.rollback()
-        output = napalm_config.device.send_command('show run | inc logging buffer')
+        original_pattern = original_cfg['platform']
+        running_config, startup_config = retrieve_config(napalm_config)
+        running = True if re.search(bad, running_config) else False
         assert 'logging buffered 10000' in output
+
 
 
 def test_commit_config_hostname(napalm_config):
