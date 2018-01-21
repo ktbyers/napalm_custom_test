@@ -16,6 +16,7 @@ NAPALM_TESTS = {
     'merge_inline_commit_config': ["./test_merge_cfg.sh",],
     'test_replace_commit_config': ["./test_replace_cfg.sh",],
     'discard_config': ["./test_discard_cfg.sh",],
+    'rollback': ["./test_rollback.sh",],
 }
 
 def main():
