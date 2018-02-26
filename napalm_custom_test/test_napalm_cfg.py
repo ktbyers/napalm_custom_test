@@ -14,6 +14,7 @@ import re
 
 # commit confirmed mechanism
 # IOS needs inline and SCP mechanism tested
+# IOS needs inline transfer testing
 
 def retrieve_config(napalm_config):
     """Retrieve the running and startup-config from remote device."""
