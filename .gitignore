@@ -101,3 +101,6 @@ ENV/
 .mypy_cache/
 
 test_devices.yml
+
+.pytest_cache/*
+napalm_custom_test/CFGS/*

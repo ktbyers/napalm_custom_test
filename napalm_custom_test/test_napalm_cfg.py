@@ -2,6 +2,9 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import time
 import re
+import pytest
+
+from napalm.base.exceptions import MergeConfigException
 
 # Relevant methods
 # load_merge_candidate()    DONE
@@ -87,6 +90,44 @@ def test_merge_inline_commit_config(napalm_config):
         assert False
 
 
+def test_merge_failure(napalm_config):
+    """Tests NAPALM merge operation incluging commit.
+
+    Merge load comes from inline 'config'
+
+    Commands will be invalid so should result in an exception and then a rollback.
+    """
+    # Actual change that is made on device
+
+    merge_change = {
+        'nxos': 'logging history size 500\nbogus command1',
+        'nxos_ssh': 'logging history size 500\nbogus command1',
+    }
+    initial_cfg = {
+        'nxos': 'logging history size 400',
+        'nxos_ssh': 'logging history size 400',
+    }
+
+    platform = napalm_config._platform
+    if platform in list(merge_change.keys()):
+
+        initial_state = initial_cfg[platform] 
+
+        # Stage the merge change
+        config_chg = merge_change[platform]
+        napalm_config.load_merge_candidate(config=config_chg)
+        with pytest.raises(MergeConfigException):
+            # Should auto rollback the change
+            napalm_config.commit_config()
+
+        running_config, startup_config = retrieve_config(napalm_config)
+        running = True if re.search(initial_state, running_config) else False
+        startup = True if re.search(initial_state, startup_config) else False
+        assert running and startup
+    else:
+        assert False
+
+
 def test_replace_commit_config(napalm_config):
 
     # Configuration element that is being changed to search for in end-config
@@ -101,7 +142,7 @@ def test_replace_commit_config(napalm_config):
     platform = napalm_config._platform
 
     if platform in list(replace_pattern.keys()):
-        
+
         config_pattern = replace_pattern[platform]
 
         # Stage new config for configuration replacement
