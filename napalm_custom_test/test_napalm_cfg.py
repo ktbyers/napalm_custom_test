@@ -5,20 +5,23 @@ import time
 import re
 import pytest
 
-from napalm.base.exceptions import MergeConfigException
+from napalm.base.exceptions import MergeConfigException, ReplaceConfigException
 
 # Relevant methods
 # load_merge_candidate()    DONE
-#    Still need to merge from file      NEEDS DONE
 # load_replace_candidate()  DONE
 # compare_config()          DONE
 # discard_config()          DONE
 # commit_config()           DONE
 # rollback()                DONE
 
+# NEED IOS-XR tests!!!
 # commit confirmed mechanism
 # IOS needs inline and SCP mechanism tested
 # IOS needs inline transfer testing
+# Banner tests on IOS and NX-OS
+
+# Merge compare_config for IOS, IOS-XR, junos, eos
 
 
 def retrieve_config(napalm_config):
@@ -53,6 +56,49 @@ def test_compare_config(napalm_config):
         assert False
 
 
+def test_compare_config_inline(napalm_config):
+    filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
+    with open(filename) as f:
+        config = f.read()
+    napalm_config.load_replace_candidate(config=config)
+    output = napalm_config.compare_config()
+    print(output)
+    if napalm_config._platform == "ios":
+        assert "+logging buffered 5000" in output
+        assert "-logging buffered 10000" in output
+    elif napalm_config._platform == "eos":
+        assert "+ntp server 130.126.24.24" in output
+    elif napalm_config._platform == "nxos":
+        assert "logging history size 200" in output
+    elif napalm_config._platform == "nxos_ssh":
+        assert "logging history size 200" in output
+    elif napalm_config._platform == "junos":
+        assert "-    archive size 120k files 3;" in output
+        assert "+    archive size 240k files 3;" in output
+    else:
+        assert False
+
+
+def test_merge_compare_config(napalm_config):
+    """Tests NAPALM compare config in a merge context.
+
+    Merge load comes from inline 'config'.
+    """
+    # Actual change that is made on device
+    merge_change = {
+        "nxos": "logging history size 100",
+        "nxos_ssh": "logging history size 100",
+    }
+
+    platform = napalm_config._platform
+    if platform in list(merge_change.keys()):
+        # Stage the merge change
+        config_chg = merge_change[platform]
+        napalm_config.load_merge_candidate(config=config_chg)
+        diff = napalm_config.compare_config()
+        assert merge_change[platform] == diff.strip()
+
+
 def test_merge_inline_commit_config(napalm_config):
     """Tests NAPALM merge operation incluging commit.
 
@@ -81,7 +127,37 @@ def test_merge_inline_commit_config(napalm_config):
         # Stage the merge change
         config_chg = merge_change[platform]
         napalm_config.load_merge_candidate(config=config_chg)
+        napalm_config.commit_config()
 
+        running_config, startup_config = retrieve_config(napalm_config)
+        running = True if re.search(config_pattern, running_config) else False
+        startup = True if re.search(config_pattern, startup_config) else False
+        assert running and startup
+    else:
+        assert False
+
+
+def test_merge_file_commit_config(napalm_config):
+    """Tests NAPALM merge operation incluging commit.
+
+    Merge load comes from inline 'config'
+
+    Verify that change is included in running-config and startup-config
+    """
+    # Config change comes from the file
+    filename = "CFGS/{}/merge_1.txt".format(napalm_config._platform)
+    platform = napalm_config._platform
+
+    if platform in ("eos", "ios", "junos", "nxos", "nxos_ssh"):
+
+        # Pattern to search for after config change
+        with open(filename) as f:
+            config_pattern = re.escape(f.read())
+        if platform == "junos":
+            config_pattern = r"archive size 200k files 3"
+
+        # Stage the merge change
+        napalm_config.load_merge_candidate(filename=filename)
         napalm_config.commit_config()
 
         running_config, startup_config = retrieve_config(napalm_config)
@@ -330,3 +406,31 @@ def test_commit_confirm_revert(napalm_config):
         napalm_config.load_replace_candidate(filename=filename)
         output = napalm_config.compare_config()
         assert output != ""
+
+def test_cfg_exceptions(napalm_config):
+
+    # filename or config not specified
+    with pytest.raises(ReplaceConfigException):
+        napalm_config.load_replace_candidate()
+    with pytest.raises(MergeConfigException):
+        napalm_config.load_merge_candidate()
+
+    # Invalid filename
+    with pytest.raises(ReplaceConfigException):
+        napalm_config.load_replace_candidate(filename="invalid_file_x")
+
+    platform = napalm_config._platform
+    if platform in ('nxos', 'nxos_ssh'):
+        # Commit Config with a message
+        with pytest.raises(NotImplementedError):
+            napalm_config.commit_config(message="should raise not implemented")
+
+        # No change staged
+        napalm_config.discard_config()
+        with pytest.raises(ReplaceConfigException):
+            napalm_config.commit_config()
+
+        # No exception if the sot_file doesn't exist
+        napalm_config._delete_file(filename="sot_file")
+        napalm_config._create_sot_file()
+        assert True
