@@ -45,10 +45,8 @@ def test_compare_config(napalm_config):
         assert "-logging buffered 10000" in output
     elif napalm_config._platform == "eos":
         assert "+ntp server 130.126.24.24" in output
-    elif napalm_config._platform == "nxos":
-        assert "logging history size 200" in output
-    elif napalm_config._platform == "nxos_ssh":
-        assert "logging history size 200" in output
+    elif napalm_config._platform in ["nxos", "nxos_ssh"]:
+        assert "logging monitor 2"
     elif napalm_config._platform == "junos":
         assert "-    archive size 120k files 3;" in output
         assert "+    archive size 240k files 3;" in output
@@ -68,10 +66,8 @@ def test_compare_config_inline(napalm_config):
         assert "-logging buffered 10000" in output
     elif napalm_config._platform == "eos":
         assert "+ntp server 130.126.24.24" in output
-    elif napalm_config._platform == "nxos":
-        assert "logging history size 200" in output
-    elif napalm_config._platform == "nxos_ssh":
-        assert "logging history size 200" in output
+    elif napalm_config._platform in ["nxos", "nxos_ssh"]:
+        assert "logging monitor 1"
     elif napalm_config._platform == "junos":
         assert "-    archive size 120k files 3;" in output
         assert "+    archive size 240k files 3;" in output
@@ -86,8 +82,8 @@ def test_merge_compare_config(napalm_config):
     """
     # Actual change that is made on device
     merge_change = {
-        "nxos": "logging history size 100",
-        "nxos_ssh": "logging history size 100",
+        "nxos": "logging monitor 1",
+        "nxos_ssh": "logging monitor 1",
     }
 
     platform = napalm_config._platform
@@ -111,8 +107,8 @@ def test_merge_inline_commit_config(napalm_config):
         "eos": "logging buffered 7000",
         "ios": "logging buffered 7000",
         "junos": "set system syslog archive size 200k files 3",
-        "nxos": "logging history size 100",
-        "nxos_ssh": "logging history size 100",
+        "nxos": "logging monitor 1",
+        "nxos_ssh": "logging monitor 1",
     }
 
     # Pattern that we search for in the end-config
@@ -178,12 +174,12 @@ def test_merge_failure(napalm_config):
     # Actual change that is made on device
 
     merge_change = {
-        "nxos": "logging history size 500\nbogus command1",
-        "nxos_ssh": "logging history size 500\nbogus command1",
+        "nxos": "logging monitor 1\nbogus command1",
+        "nxos_ssh": "logging monitor 1\nbogus command1",
     }
     initial_cfg = {
-        "nxos": "logging history size 400",
-        "nxos_ssh": "logging history size 400",
+        "nxos": "logging monitor 2",
+        "nxos_ssh": "logging monitor 2",
     }
 
     platform = napalm_config._platform
@@ -213,8 +209,8 @@ def test_replace_commit_config(napalm_config):
         "eos": "ntp server 130.126.24.24",
         "ios": "logging buffered 5000",
         "junos": "archive size 240k files 3",
-        "nxos": "logging history size 200",
-        "nxos_ssh": "logging history size 200",
+        "nxos": "logging monitor 1",
+        "nxos_ssh": "logging monitor 1",
     }
 
     platform = napalm_config._platform
@@ -253,8 +249,8 @@ def test_discard_config(napalm_config):
         "eos": "logging buffered 7000",
         "ios": "logging buffered 7000",
         "junos": "set system syslog archive size 200k files 3",
-        "nxos": "logging history size 100",
-        "nxos_ssh": "logging history size 100",
+        "nxos": "logging monitor 1",
+        "nxos_ssh": "logging monitor 1",
     }
 
     # Stage the merge change
@@ -272,16 +268,16 @@ def test_rollback(napalm_config):
     config_change = {
         "eos": "ntp server 130.126.24.24",
         "ios": "logging buffered 5000",
-        "nxos": "logging history size 200",
-        "nxos_ssh": "logging history size 200",
+        "nxos": "logging monitor 1",
+        "nxos_ssh": "logging monitor 1",
         "junos": "archive size 240k files 3",
     }
 
     original_cfg = {
         "eos": "",
         "ios": "logging buffered 10000",
-        "nxos": "logging history size 400",
-        "nxos_ssh": "logging history size 400",
+        "nxos": "logging monitor 2",
+        "nxos_ssh": "logging monitor 2",
         "junos": "archive size 120k files 3",
     }
 
