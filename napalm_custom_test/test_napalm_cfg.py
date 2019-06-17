@@ -319,6 +319,17 @@ def test_commit_config_hostname(napalm_config):
         else:
             status = False
         assert status
+    elif platform in ["nxos_ssh"]:
+        napalm_config.load_replace_candidate(filename=filename)
+        napalm_config.commit_config()
+        running_config = napalm_config.get_config()["running"]
+        for line in running_config.splitlines():
+            if "hostname test-nxos1" in line:
+                status = True
+                break
+        else:
+            status = False
+        assert status
 
 
 def test_commit_confirm(napalm_config):
