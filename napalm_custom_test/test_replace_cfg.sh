@@ -9,10 +9,13 @@ echo "Starting tests...good luck:" \
 && echo "---- replace_commit_config ----" \
 && echo "Cisco IOS" \
 && $PYTEST -s -v test_napalm_cfg.py::test_replace_commit_config --test_device ios \
+&& $PYTEST -s -v test_napalm_cfg.py::test_commit_config_hostname --test_device ios \
 && echo "Cisco NX-OS (API)" \
 && $PYTEST -s -v test_napalm_cfg.py::test_replace_commit_config --test_device nxos \
+&& $PYTEST -s -v test_napalm_cfg.py::test_commit_config_hostname --test_device nxos \
 && echo "Cisco NX-OS (SSH)" \
 && $PYTEST -s -v test_napalm_cfg.py::test_replace_commit_config --test_device nxos_ssh \
+&& $PYTEST -s -v test_napalm_cfg.py::test_commit_config_hostname --test_device nxos_ssh \
 && echo "Arista" \
 && $PYTEST -s -v test_napalm_cfg.py::test_replace_commit_config --test_device eos \
 && echo "Juniper" \
