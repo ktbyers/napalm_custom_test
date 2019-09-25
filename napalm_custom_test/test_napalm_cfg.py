@@ -5,7 +5,7 @@ import time
 import re
 import pytest
 
-from napalm.base.exceptions import MergeConfigException, ReplaceConfigException
+from incendio.base.exceptions import MergeConfigException, ReplaceConfigException
 
 # Relevant methods
 # load_merge_candidate()    DONE
@@ -50,6 +50,9 @@ def test_compare_config(napalm_config):
     elif napalm_config._platform == "junos":
         assert "-    archive size 120k files 3;" in output
         assert "+    archive size 240k files 3;" in output
+    elif napalm_config._platform == "iosxr":
+        assert "#  logging buffered 4000010" in output
+        assert "#  logging buffered 3000000" in output
     else:
         assert False
 

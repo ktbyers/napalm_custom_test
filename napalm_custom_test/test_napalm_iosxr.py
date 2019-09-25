@@ -9,3 +9,8 @@ def test_facts(napalm_connect):
     assert napalm_facts["fqdn"] == "pynet-iosxr1"
     # assert napalm_facts["model"] == "881"
     assert "GigabitEthernet0/0/0/0" in napalm_facts["interface_list"]
+
+def test_get_config(napalm_connect):
+    config = napalm_connect.get_config()
+    print(config)
+    assert True
