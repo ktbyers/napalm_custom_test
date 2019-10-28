@@ -15,13 +15,12 @@ from incendio.base.exceptions import MergeConfigException, ReplaceConfigExceptio
 # commit_config()           DONE
 # rollback()                DONE
 
-# NEED IOS-XR tests!!!
 # commit confirmed mechanism
 # IOS needs inline and SCP mechanism tested
 # IOS needs inline transfer testing
 # Banner tests on IOS and NX-OS
 
-# Merge compare_config for IOS, IOS-XR, junos, eos
+# Merge compare_config for IOS, junos, eos
 
 
 def retrieve_config(napalm_config):
@@ -29,7 +28,7 @@ def retrieve_config(napalm_config):
     config = napalm_config.get_config()
     running_config = config["running"]
     startup_config = config["startup"]
-    if napalm_config._platform == "junos":
+    if napalm_config._platform in ["junos", "iosxr"]:
         startup_config = running_config
     return (running_config, startup_config)
 
@@ -74,6 +73,9 @@ def test_compare_config_inline(napalm_config):
     elif napalm_config._platform == "junos":
         assert "-    archive size 120k files 3;" in output
         assert "+    archive size 240k files 3;" in output
+    elif napalm_config._platform == "iosxr":
+        assert "#  logging buffered 4000010" in output
+        assert "#  logging buffered 3000000" in output
     else:
         assert False
 
@@ -84,7 +86,11 @@ def test_merge_compare_config(napalm_config):
     Merge load comes from inline 'config'.
     """
     # Actual change that is made on device
-    merge_change = {"nxos": "logging monitor 1", "nxos_ssh": "logging monitor 1"}
+    merge_change = {
+        "nxos": "logging monitor 1",
+        "nxos_ssh": "logging monitor 1",
+        "iosxr": "logging buffered 3000000",
+    }
 
     platform = napalm_config._platform
     if platform in list(merge_change.keys()):
@@ -92,7 +98,11 @@ def test_merge_compare_config(napalm_config):
         config_chg = merge_change[platform]
         napalm_config.load_merge_candidate(config=config_chg)
         diff = napalm_config.compare_config()
-        assert merge_change[platform] == diff.strip()
+        if platform in ["nxos", "nxos_ssh"]:
+            assert merge_change[platform] == diff.strip()
+        elif platform in ["iosxr"]:
+            assert "-logging buffered 4000010" in diff
+            assert "+logging buffered 3000000" in diff
 
 
 def test_merge_inline_commit_config(napalm_config):
@@ -109,6 +119,7 @@ def test_merge_inline_commit_config(napalm_config):
         "junos": "set system syslog archive size 200k files 3",
         "nxos": "logging monitor 1",
         "nxos_ssh": "logging monitor 1",
+        "iosxr": "logging buffered 3000000",
     }
 
     # Pattern that we search for in the end-config
@@ -208,6 +219,7 @@ def test_replace_commit_config(napalm_config):
         "junos": "archive size 240k files 3",
         "nxos": "logging monitor 1",
         "nxos_ssh": "logging monitor 1",
+        "iosxr": "logging buffered 3000000",
     }
 
     platform = napalm_config._platform
@@ -248,6 +260,7 @@ def test_discard_config(napalm_config):
         "junos": "set system syslog archive size 200k files 3",
         "nxos": "logging monitor 1",
         "nxos_ssh": "logging monitor 1",
+        "iosxr": "logging buffered 3000000",
     }
 
     # Stage the merge change
@@ -268,6 +281,7 @@ def test_rollback(napalm_config):
         "nxos": "logging monitor 1",
         "nxos_ssh": "logging monitor 1",
         "junos": "archive size 240k files 3",
+        "iosxr": "logging buffered 3000000",
     }
 
     original_cfg = {
@@ -276,6 +290,7 @@ def test_rollback(napalm_config):
         "nxos": "logging monitor 2",
         "nxos_ssh": "logging monitor 2",
         "junos": "archive size 120k files 3",
+        "iosxr": "logging buffered 4000010",
     }
 
     filename = "CFGS/{}/compare_1.txt".format(platform)
