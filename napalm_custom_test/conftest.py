@@ -6,6 +6,7 @@ import pytest
 import io
 import sys
 import yaml
+#from incendio import get_network_driver
 from napalm import get_network_driver
 
 PWD = os.path.dirname(os.path.realpath(__file__))
@@ -15,7 +16,7 @@ def parse_yaml(yaml_file):
     """Read yaml file."""
     try:
         with io.open(yaml_file, encoding="utf-8") as fname:
-            return yaml.load(fname)
+            return yaml.safe_load(fname)
     except IOError:
         sys.exit("Unable to open YAML file: {}".format(yaml_file))
 

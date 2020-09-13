@@ -15,13 +15,12 @@ from napalm.base.exceptions import MergeConfigException, ReplaceConfigException
 # commit_config()           DONE
 # rollback()                DONE
 
-# NEED IOS-XR tests!!!
 # commit confirmed mechanism
 # IOS needs inline and SCP mechanism tested
 # IOS needs inline transfer testing
 # Banner tests on IOS and NX-OS
 
-# Merge compare_config for IOS, IOS-XR, junos, eos
+# Merge compare_config for IOS, junos, eos
 
 
 def retrieve_config(napalm_config):
@@ -29,7 +28,7 @@ def retrieve_config(napalm_config):
     config = napalm_config.get_config()
     running_config = config["running"]
     startup_config = config["startup"]
-    if napalm_config._platform == "junos":
+    if napalm_config._platform in ["junos", "iosxr"]:
         startup_config = running_config
     return (running_config, startup_config)
 
@@ -50,6 +49,9 @@ def test_compare_config(napalm_config):
     elif napalm_config._platform == "junos":
         assert "-    archive size 120k files 3;" in output
         assert "+    archive size 240k files 3;" in output
+    elif napalm_config._platform == "iosxr":
+        assert "#  logging buffered 4000010" in output
+        assert "#  logging buffered 3000000" in output
     else:
         assert False
 
@@ -71,6 +73,9 @@ def test_compare_config_inline(napalm_config):
     elif napalm_config._platform == "junos":
         assert "-    archive size 120k files 3;" in output
         assert "+    archive size 240k files 3;" in output
+    elif napalm_config._platform == "iosxr":
+        assert "#  logging buffered 4000010" in output
+        assert "#  logging buffered 3000000" in output
     else:
         assert False
 
@@ -81,7 +86,11 @@ def test_merge_compare_config(napalm_config):
     Merge load comes from inline 'config'.
     """
     # Actual change that is made on device
-    merge_change = {"nxos": "logging monitor 1", "nxos_ssh": "logging monitor 1"}
+    merge_change = {
+        "nxos": "logging monitor 1",
+        "nxos_ssh": "logging monitor 1",
+        "iosxr": "logging buffered 3000000",
+    }
 
     platform = napalm_config._platform
     if platform in list(merge_change.keys()):
@@ -89,7 +98,11 @@ def test_merge_compare_config(napalm_config):
         config_chg = merge_change[platform]
         napalm_config.load_merge_candidate(config=config_chg)
         diff = napalm_config.compare_config()
-        assert merge_change[platform] == diff.strip()
+        if platform in ["nxos", "nxos_ssh"]:
+            assert merge_change[platform] == diff.strip()
+        elif platform in ["iosxr"]:
+            assert "-logging buffered 4000010" in diff
+            assert "+logging buffered 3000000" in diff
 
 
 def test_merge_inline_commit_config(napalm_config):
@@ -106,6 +119,7 @@ def test_merge_inline_commit_config(napalm_config):
         "junos": "set system syslog archive size 200k files 3",
         "nxos": "logging monitor 1",
         "nxos_ssh": "logging monitor 1",
+        "iosxr": "logging buffered 3000000",
     }
 
     # Pattern that we search for in the end-config
@@ -205,6 +219,7 @@ def test_replace_commit_config(napalm_config):
         "junos": "archive size 240k files 3",
         "nxos": "logging monitor 1",
         "nxos_ssh": "logging monitor 1",
+        "iosxr": "logging buffered 3000000",
     }
 
     platform = napalm_config._platform
@@ -245,6 +260,7 @@ def test_discard_config(napalm_config):
         "junos": "set system syslog archive size 200k files 3",
         "nxos": "logging monitor 1",
         "nxos_ssh": "logging monitor 1",
+        "iosxr": "logging buffered 3000000",
     }
 
     # Stage the merge change
@@ -265,6 +281,7 @@ def test_rollback(napalm_config):
         "nxos": "logging monitor 1",
         "nxos_ssh": "logging monitor 1",
         "junos": "archive size 240k files 3",
+        "iosxr": "logging buffered 3000000",
     }
 
     original_cfg = {
@@ -273,6 +290,7 @@ def test_rollback(napalm_config):
         "nxos": "logging monitor 2",
         "nxos_ssh": "logging monitor 2",
         "junos": "archive size 120k files 3",
+        "iosxr": "logging buffered 4000010",
     }
 
     filename = "CFGS/{}/compare_1.txt".format(platform)
@@ -376,87 +394,6 @@ def test_commit_config_hostname_merge(napalm_config):
         assert status
 
 
-# def test_commit_confirm(napalm_config):
-#     """Commit confirm and confirm the change (replace)."""
-#     filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
-#     platform = napalm_config._platform
-#     if platform in ["ios"]:
-#         # Load new candidate config
-#         napalm_config.load_replace_candidate(filename=filename)
-#
-#         # Commit confirm with 3 minute confirm time
-#         napalm_config.commit_config(confirmed=3)
-#
-#         # Verify pending commit confirm
-#         assert napalm_config.has_pending_commit()
-#
-#         # Verify revert timer is set
-#         # output = napalm_config.device.send_command("show archive config rollback timer")
-#         # assert 'Timer value: 3 min' in output
-#
-#         # Confirm the change
-#         napalm_config.commit_confirm()
-#
-#         # Should be no pending commits
-#         assert not napalm_config.has_pending_commit()
-#
-#         # Verify config has been committed
-#         napalm_config.load_replace_candidate(filename=filename)
-#         output = napalm_config.compare_config()
-#         assert output == ""
-
-
-# def test_commit_confirm_noconfirm(napalm_config):
-#     """Commit confirm with no confirm (replace)."""
-#     filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
-#     platform = napalm_config._platform
-#     if platform in ["ios"]:
-#
-#         # Load new candidate config
-#         napalm_config.load_replace_candidate(filename=filename)
-#
-#         # Commit confirm with 1 minute confirm time
-#         napalm_config.commit_config(confirmed=1)
-#
-#         # Verify pending commit confirm
-#         assert napalm_config.has_pending_commit()
-#
-#         print("Sleeping 80 seconds...")
-#         time.sleep(80)
-#
-#         # Verify pending commit confirm
-#         assert not napalm_config.has_pending_commit()
-#
-#         # Should have rolled back so differences should exist
-#         napalm_config.load_replace_candidate(filename=filename)
-#         output = napalm_config.compare_config()
-#         assert output != ""
-
-
-# def test_commit_confirm_revert(napalm_config):
-#     """Commit confirm but cancel the confirm and revert immediately (replace)."""
-#     filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
-#     platform = napalm_config._platform
-#     if platform in ["ios"]:
-#
-#         # Load new candidate config
-#         napalm_config.load_replace_candidate(filename=filename)
-#
-#         # Commit confirm with 3 minute confirm time
-#         napalm_config.commit_config(confirmed=3)
-#
-#         # Verify pending commit confirm
-#         assert napalm_config.has_pending_commit()
-#
-#         napalm_config.commit_confirm_revert()
-#
-#         # Verify pending commit confirm
-#         assert not napalm_config.has_pending_commit()
-#
-#         # Should have rolled back so differences should exist
-#         napalm_config.load_replace_candidate(filename=filename)
-#         output = napalm_config.compare_config()
-#         assert output != ""
 
 
 def test_cfg_exceptions(napalm_config):
@@ -486,3 +423,96 @@ def test_cfg_exceptions(napalm_config):
         napalm_config._delete_file(filename="sot_file")
         napalm_config._create_sot_file()
         assert True
+
+
+def test_commit_confirm(napalm_config):
+    """Commit confirm and confirm the change (replace)."""
+    filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
+    platform = napalm_config._platform
+
+    if platform in ["eos"]:
+        # Load new candidate config
+        napalm_config.load_replace_candidate(filename=filename)
+
+        # Commit confirm with 300 second confirm time
+        napalm_config.commit_config(revert_in=300)
+
+        # Verify pending commit confirm
+        assert napalm_config.has_pending_commit()
+
+        # Verify revert timer is set
+        pending_commit = napalm_config._get_pending_commits()
+        for config_session, confirm_by_time in pending_commit.items():
+            assert confirm_by_time > 240
+            assert confirm_by_time < 300
+
+        # Confirm the change
+        napalm_config.confirm_commit()
+
+        # There should be no active commit-confirms at this point
+        assert not napalm_config.has_pending_commit()
+
+        # Verify config has been committed
+        napalm_config.load_replace_candidate(filename=filename)
+        output = napalm_config.compare_config()
+        assert output == ""
+
+    else:
+
+        with pytest.raises(NotImplementedError):
+            napalm_config.commit_config(revert_in=600)
+
+
+def test_commit_confirm_noconfirm(napalm_config):
+    """Commit confirm with no confirm (replace)."""
+    filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
+    platform = napalm_config._platform
+    if platform in ["eos"]:
+
+        # Load new candidate config
+        napalm_config.load_replace_candidate(filename=filename)
+
+        # Commit confirm with 1 minute confirm time
+        napalm_config.commit_config(revert_in=60)
+
+        # Verify pending commit confirm
+        assert napalm_config.has_pending_commit()
+
+        print("Sleeping 80 seconds...")
+        time.sleep(80)
+
+        # Verify pending commit confirm
+        assert not napalm_config.has_pending_commit()
+
+        # Should have rolled back so differences should exist
+        napalm_config.load_replace_candidate(filename=filename)
+        output = napalm_config.compare_config()
+        assert output != ""
+
+
+def test_commit_confirm_revert(napalm_config):
+    """Commit confirm but cancel the confirm and revert immediately (replace)."""
+    filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
+    platform = napalm_config._platform
+    if platform in ["eos"]:
+
+        # Load new candidate config
+        napalm_config.load_replace_candidate(filename=filename)
+
+        # Commit confirm with 3 minute confirm time
+        napalm_config.commit_config(revert_in=300)
+
+        # Verify pending commit confirm
+        assert napalm_config.has_pending_commit()
+
+        napalm_config.rollback()
+
+        # Verify pending commit confirm
+        assert not napalm_config.has_pending_commit()
+
+        # Should have rolled back so differences should exist
+        napalm_config.load_replace_candidate(filename=filename)
+        output = napalm_config.compare_config()
+        assert output != ""
+
+        napalm_config.discard_config()
