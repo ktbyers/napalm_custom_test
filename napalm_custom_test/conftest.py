@@ -6,7 +6,8 @@ import pytest
 import io
 import sys
 import yaml
-from incendio import get_network_driver
+#from incendio import get_network_driver
+from napalm import get_network_driver
 
 PWD = os.path.dirname(os.path.realpath(__file__))
 
