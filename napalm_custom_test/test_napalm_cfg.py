@@ -490,28 +490,29 @@ def test_commit_confirm_noconfirm(napalm_config):
         assert output != ""
 
 
-# def test_commit_confirm_revert(napalm_config):
-#     """Commit confirm but cancel the confirm and revert immediately (replace)."""
-#     filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
-#     platform = napalm_config._platform
-#     if platform in ["ios"]:
-#
-#         # Load new candidate config
-#         napalm_config.load_replace_candidate(filename=filename)
-#
-#         # Commit confirm with 3 minute confirm time
-#         napalm_config.commit_config(confirmed=3)
-#
-#         # Verify pending commit confirm
-#         assert napalm_config.has_pending_commit()
-#
-#         napalm_config.commit_confirm_revert()
-#
-#         # Verify pending commit confirm
-#         assert not napalm_config.has_pending_commit()
-#
-#         # Should have rolled back so differences should exist
-#         napalm_config.load_replace_candidate(filename=filename)
-#         output = napalm_config.compare_config()
-#         assert output != ""
+def test_commit_confirm_revert(napalm_config):
+    """Commit confirm but cancel the confirm and revert immediately (replace)."""
+    filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
+    platform = napalm_config._platform
+    if platform in ["eos"]:
 
+        # Load new candidate config
+        napalm_config.load_replace_candidate(filename=filename)
+
+        # Commit confirm with 3 minute confirm time
+        napalm_config.commit_config(revert_in=300)
+
+        # Verify pending commit confirm
+        assert napalm_config.has_pending_commit()
+
+        napalm_config.rollback()
+
+        # Verify pending commit confirm
+        assert not napalm_config.has_pending_commit()
+
+        # Should have rolled back so differences should exist
+        napalm_config.load_replace_candidate(filename=filename)
+        output = napalm_config.compare_config()
+        assert output != ""
+
+        napalm_config.discard_config()

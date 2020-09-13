@@ -1,7 +1,7 @@
 #!/bin/sh
 
 RETURN_CODE=0
-PYTEST="/home/gituser/VENV/napalm_auto_test/bin/py.test"
+PYTEST="/home/kbyers/VENV/napalm_auto_test/bin/py.test"
 
 # Exit on the first test failure and set RETURN_CODE = 1
 echo "Starting tests...good luck:" \
