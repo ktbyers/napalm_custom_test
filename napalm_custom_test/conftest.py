@@ -61,13 +61,18 @@ def napalm_config(request):
     test_devices = parse_yaml(PWD + "/test_devices.yml")
     device_def = test_devices[device_under_test]
     platform = device_def.pop("device_type")
+    optional_args = device_def.get("optional_args", {})
+    config_encoding = optional_args.get("config_encoding", "cli")
     driver = get_network_driver(platform)
     connection = driver(**device_def)
     connection.open()
     connection._platform = platform
 
     # Stage a known initial configuration
-    filename = "CFGS/{}/initial_config.txt".format(platform)
+    if config_encoding == "xml":
+        filename = "CFGS/{}/initial_config.xml".format(platform)
+    else:
+        filename = "CFGS/{}/initial_config.txt".format(platform)
     print("Loading initial configuration.")
     connection.load_replace_candidate(filename=filename)
     # print(connection.compare_config())
