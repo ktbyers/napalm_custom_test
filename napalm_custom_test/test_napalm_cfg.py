@@ -427,6 +427,8 @@ def test_cfg_exceptions(napalm_config):
 
 def test_commit_confirm(napalm_config):
     """Commit confirm and confirm the change (replace)."""
+
+    import ipdb; ipdb.set_trace()
     filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
 
@@ -465,6 +467,7 @@ def test_commit_confirm(napalm_config):
 
 def test_commit_confirm_noconfirm(napalm_config):
     """Commit confirm with no confirm (replace)."""
+    import ipdb; ipdb.set_trace()
     filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
     if platform in ["eos"]:
@@ -492,6 +495,7 @@ def test_commit_confirm_noconfirm(napalm_config):
 
 def test_commit_confirm_revert(napalm_config):
     """Commit confirm but cancel the confirm and revert immediately (replace)."""
+    import ipdb; ipdb.set_trace()
     filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
     if platform in ["eos"]:
