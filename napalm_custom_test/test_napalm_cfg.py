@@ -15,7 +15,6 @@ from napalm.base.exceptions import MergeConfigException, ReplaceConfigException
 # commit_config()           DONE
 # rollback()                DONE
 
-# commit confirmed mechanism
 # IOS needs inline and SCP mechanism tested
 # IOS needs inline transfer testing
 # Banner tests on IOS and NX-OS
@@ -394,8 +393,6 @@ def test_commit_config_hostname_merge(napalm_config):
         assert status
 
 
-
-
 def test_cfg_exceptions(napalm_config):
 
     # filename or config not specified
@@ -428,11 +425,13 @@ def test_cfg_exceptions(napalm_config):
 def test_commit_confirm(napalm_config):
     """Commit confirm and confirm the change (replace)."""
 
-    import ipdb; ipdb.set_trace()
-    filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
+    if napalm_config._platform_host:
+        filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform_host)
+    else:
+        filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
 
-    if platform in ["eos"]:
+    if platform in ["eos", "junos"]:
         # Load new candidate config
         napalm_config.load_replace_candidate(filename=filename)
 
@@ -446,7 +445,7 @@ def test_commit_confirm(napalm_config):
         pending_commit = napalm_config._get_pending_commits()
         for config_session, confirm_by_time in pending_commit.items():
             assert confirm_by_time > 240
-            assert confirm_by_time < 300
+            assert confirm_by_time <= 300
 
         # Confirm the change
         napalm_config.confirm_commit()
@@ -467,10 +466,14 @@ def test_commit_confirm(napalm_config):
 
 def test_commit_confirm_noconfirm(napalm_config):
     """Commit confirm with no confirm (replace)."""
-    import ipdb; ipdb.set_trace()
-    filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
+
+    if napalm_config._platform_host:
+        filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform_host)
+    else:
+        filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
-    if platform in ["eos"]:
+
+    if platform in ["eos", "junos"]:
 
         # Load new candidate config
         napalm_config.load_replace_candidate(filename=filename)
@@ -481,8 +484,9 @@ def test_commit_confirm_noconfirm(napalm_config):
         # Verify pending commit confirm
         assert napalm_config.has_pending_commit()
 
-        print("Sleeping 80 seconds...")
-        time.sleep(80)
+        # Juniper is slow to rollback.
+        print("Sleeping 150 seconds...")
+        time.sleep(150)
 
         # Verify pending commit confirm
         assert not napalm_config.has_pending_commit()
@@ -495,7 +499,9 @@ def test_commit_confirm_noconfirm(napalm_config):
 
 def test_commit_confirm_revert(napalm_config):
     """Commit confirm but cancel the confirm and revert immediately (replace)."""
-    import ipdb; ipdb.set_trace()
+    import ipdb
+
+    ipdb.set_trace()
     filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
     if platform in ["eos"]:

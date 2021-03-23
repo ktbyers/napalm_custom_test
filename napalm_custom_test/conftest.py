@@ -6,7 +6,8 @@ import pytest
 import io
 import sys
 import yaml
-#from incendio import get_network_driver
+
+# from incendio import get_network_driver
 from napalm import get_network_driver
 
 PWD = os.path.dirname(os.path.realpath(__file__))
@@ -66,17 +67,27 @@ def napalm_config(request):
     driver = get_network_driver(platform)
     connection = driver(**device_def)
     connection.open()
+
+    # Workaround to test different juniper devices
+    if device_under_test == "vmx1":
+        connection._platform_host = "vmx1"
+    else:
+        connection._platform_host = None
     connection._platform = platform
 
     # Stage a known initial configuration
     if config_encoding == "xml":
-        filename = "CFGS/{}/initial_config.xml".format(platform)
+        filename = "CFGS/{}/initial_config.xml".format(connection._platform)
     else:
-        filename = "CFGS/{}/initial_config.txt".format(platform)
+        if connection._platform_host:
+            filename = "CFGS/{}/initial_config.txt".format(connection._platform_host)
+        else:
+            filename = "CFGS/{}/initial_config.txt".format(connection._platform)
+
     print("Loading initial configuration.")
     connection.load_replace_candidate(filename=filename)
-    # print(connection.compare_config())
-    connection.commit_config()
+    if connection.compare_config():
+        connection.commit_config()
 
     request.addfinalizer(napalm_close)
     return connection
