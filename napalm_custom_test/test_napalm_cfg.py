@@ -499,12 +499,14 @@ def test_commit_confirm_noconfirm(napalm_config):
 
 def test_commit_confirm_revert(napalm_config):
     """Commit confirm but cancel the confirm and revert immediately (replace)."""
-    import ipdb
 
-    ipdb.set_trace()
-    filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
+    if napalm_config._platform_host:
+        filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform_host)
+    else:
+        filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
-    if platform in ["eos"]:
+
+    if platform in ["eos", "junos"]:
 
         # Load new candidate config
         napalm_config.load_replace_candidate(filename=filename)
