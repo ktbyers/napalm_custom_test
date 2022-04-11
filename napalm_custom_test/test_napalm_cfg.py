@@ -102,6 +102,7 @@ def test_merge_compare_config(napalm_config):
         elif platform in ["iosxr"]:
             assert "-logging buffered 4000010" in diff
             assert "+logging buffered 3000000" in diff
+        napalm_config.discard_config()
 
 
 def test_merge_inline_commit_config(napalm_config):
