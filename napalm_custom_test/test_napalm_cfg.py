@@ -432,7 +432,7 @@ def test_commit_confirm(napalm_config):
         filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
 
-    if platform in ["eos", "junos"]:
+    if platform in ["ios", "eos", "junos"]:
         # Load new candidate config
         napalm_config.load_replace_candidate(filename=filename)
 
@@ -444,9 +444,14 @@ def test_commit_confirm(napalm_config):
 
         # Verify revert timer is set
         pending_commit = napalm_config._get_pending_commits()
-        for config_session, confirm_by_time in pending_commit.items():
-            assert confirm_by_time > 240
-            assert confirm_by_time <= 300
+        if platform == "ios":
+            confirm_by_time = pending_commit['timer']
+            assert confirm_by_time == "5 min"
+
+        else:
+            for config_session, confirm_by_time in pending_commit.items():
+                assert confirm_by_time > 240
+                assert confirm_by_time <= 300
 
         # Confirm the change
         napalm_config.confirm_commit()
@@ -474,7 +479,7 @@ def test_commit_confirm_noconfirm(napalm_config):
         filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
 
-    if platform in ["eos", "junos"]:
+    if platform in ["ios", "eos", "junos"]:
 
         # Load new candidate config
         napalm_config.load_replace_candidate(filename=filename)
@@ -495,6 +500,7 @@ def test_commit_confirm_noconfirm(napalm_config):
         # Should have rolled back so differences should exist
         napalm_config.load_replace_candidate(filename=filename)
         output = napalm_config.compare_config()
+        napalm_config.rollback()
         assert output != ""
 
 
@@ -507,7 +513,7 @@ def test_commit_confirm_revert(napalm_config):
         filename = "CFGS/{}/compare_1.txt".format(napalm_config._platform)
     platform = napalm_config._platform
 
-    if platform in ["eos", "junos"]:
+    if platform in ["ios", "eos", "junos"]:
 
         # Load new candidate config
         napalm_config.load_replace_candidate(filename=filename)
